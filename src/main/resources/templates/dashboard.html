@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<div class="container">
+    <header class="topbar">
+        <h2>Welcome, <span th:text="${user.name}"></span></h2>
+        <a href="/logout" class="btn-link">Logout</a>
+    </header>
+
+    <div class="grid">
+        <div class="panel">
+            <h3>Campus Notices</h3>
+            <div th:if="${#lists.isEmpty(notices)}">
+                <p>No notices available yet.</p>
+            </div>
+            <div th:each="notice : ${notices}" class="notice-card">
+                <h4 th:text="${notice.title}"></h4>
+                <small th:text="${notice.category} + ' • ' + ${#temporals.format(notice.createdAt, 'dd MMM yyyy')}" ></small>
+                <p th:text="${notice.content}"></p>
+
+                <div th:if="${not isAdminOrFaculty}">
+                    <form th:action="@{/submissions/create}" method="post">
+                        <input type="hidden" name="noticeId" th:value="${notice.id}">
+                        <label>Submission Link</label>
+                        <input type="url" name="link" required>
+                        <label>Message</label>
+                        <textarea name="message" rows="3"></textarea>
+                        <button type="submit">Submit</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel" th:if="${isAdminOrFaculty}">
+            <h3>Publish New Notice</h3>
+            <form th:action="@{/notices/create}" method="post">
+                <label>Title</label>
+                <input type="text" name="title" required>
+
+                <label>Category</label>
+                <select name="category">
+                    <option>Academic</option>
+                    <option>Event</option>
+                    <option>Urgent</option>
+                    <option>General</option>
+                </select>
+
+                <label>Content</label>
+                <textarea name="content" rows="5" required></textarea>
+
+                <button type="submit">Publish Notice</button>
+            </form>
+        </div>
+
+        <div class="panel" th:if="${isAdminOrFaculty}">
+            <h3>Student Submissions</h3>
+            <div th:if="${#lists.isEmpty(notices)}">
+                <p>No submissions to review.</p>
+            </div>
+            <div th:each="notice : ${notices}">
+                <h4 th:text="${notice.title}"></h4>
+                <div th:each="submission : ${notice.submissions}">
+                    <div class="submission-item">
+                        <p><strong th:text="${submission.student.name}"></strong></p>
+                        <p><a th:href="${submission.link}" target="_blank">Open link</a></p>
+                        <p th:text="${submission.message}"></p>
+                        <form th:action="@{/submissions/update-status}" method="post">
+                            <input type="hidden" name="submissionId" th:value="${submission.id}">
+                            <select name="status">
+                                <option value="PENDING">Pending</option>
+                                <option value="APPROVED">Approved</option>
+                                <option value="REJECTED">Rejected</option>
+                            </select>
+                            <button type="submit">Update</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel" th:unless="${isAdminOrFaculty}">
+            <h3>My Submissions</h3>
+            <div th:if="${#lists.isEmpty(submissions)}">
+                <p>No submissions yet.</p>
+            </div>
+            <div th:each="submission : ${submissions}" class="submission-item">
+                <p><strong th:text="${submission.notice.title}"></strong></p>
+                <p th:text="${submission.status}"></p>
+                <p><a th:href="${submission.link}" target="_blank">View submission</a></p>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
